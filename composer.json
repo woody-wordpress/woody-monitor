@@ -1,0 +1,26 @@
+{
+    "name": "woody-wordpress/woody-monitor",
+    "type": "library",
+    "version": "0.0.1",
+    "description": "A Monitor Uptime Status Page",
+    "license": "GPL-2.0",
+    "authors": [
+        {
+            "name": "Léo POIROUX",
+            "email": "leo@raccourci.fr"
+        }
+    ],
+    "require": {
+        "php": ">=7.0"
+    },
+    "autoload": {
+        "psr-0": {
+            "WoodyMonitor": [
+                "src/"
+            ]
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}
