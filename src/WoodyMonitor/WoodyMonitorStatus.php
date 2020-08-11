@@ -33,7 +33,7 @@ class WoodyMonitorStatus
                 $locked = (!empty($env['WOODY_ACCESS_LOCKED'])) ? $env['WOODY_ACCESS_LOCKED'] : false;
                 $staging = (!empty($env['WOODY_ACCESS_STAGING'])) ? $env['WOODY_ACCESS_STAGING'] : false;
 
-                if (!file_exists(__DIR__ . '/app/themes/' . $site_key . '/style.css')) {
+                if (!file_exists(WP_ROOT_DIR . '/web/app/themes/' . $site_key . '/style.css')) {
                     $status = 'empty';
                 } elseif ($staging) {
                     $status = 'staging';
@@ -45,7 +45,7 @@ class WoodyMonitorStatus
 
                 $sites[$site_key] = [
                     'site_key' => $site_key,
-                    'url' => (!empty($env['WOODY_HOME'])) ? $env['WOODY_HOME'] : null,
+                    'url' => (!empty($env['WP_HOME'])) ? $env['WP_HOME'] : null,
                     'status' => $status,
                     'locked' => $locked,
                     'staging' => $staging,
