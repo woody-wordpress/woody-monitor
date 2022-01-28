@@ -134,7 +134,11 @@ class WoodyMonitorStatus
 
     private function compile($data)
     {
-        require_once('status.tpl.php');
+        if (!empty($_GET['callback']) && $_GET['callback'] == 'api') {
+            require_once('api.tpl.php');
+        } else {
+            require_once('status.tpl.php');
+        }
     }
 
     private function debug($debug, $exit = true)
