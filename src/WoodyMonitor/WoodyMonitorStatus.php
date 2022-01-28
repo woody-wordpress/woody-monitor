@@ -99,7 +99,7 @@ class WoodyMonitorStatus
 
     private function order($sites)
     {
-        if (!empty($_GET['order']) == 'async') {
+        if (!empty($_GET['order']) && $_GET['order'] == 'async') {
             usort($sites, function ($a, $b) {
                 if ($a['async'] == $b['async']) {
                     return 0;
