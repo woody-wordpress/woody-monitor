@@ -22,13 +22,10 @@
 
         .cards {
             margin: 30px auto;
-            /* background: rgba(255, 255, 255, 0.5); */
-
         }
 
         td {
             padding: 5px;
-            /* border: 1px solid #fff; */
         }
 
         th {
