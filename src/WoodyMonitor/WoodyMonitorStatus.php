@@ -22,6 +22,10 @@ class WoodyMonitorStatus
         $finder = new Finder();
         $finder->files()->followLinks()->ignoreDotFiles(false)->in(WP_ROOT_DIR . '/config/sites')->name('.env');
 
+        // Defin vars
+        $all_options = [];
+        $all_status = [];
+
         // check if there are any search results
         if ($finder->hasResults()) {
             foreach ($finder as $file) {
@@ -43,6 +47,14 @@ class WoodyMonitorStatus
                     $status = 'opened';
                 }
 
+                // Options
+                $options = (!empty($env['WOODY_OPTIONS'])) ? $env['WOODY_OPTIONS'] : [];
+                $all_options = array_merge($all_options, $options);
+
+                // Status
+                $all_status[$status] = (empty($all_status[$status])) ? 1 : ($all_status[$status] + 1);
+
+                // Sites
                 $sites[$site_key] = [
                     'site_key' => $site_key,
                     'url' => (!empty($env['WP_HOME'])) ? $env['WP_HOME'] : null,
@@ -50,24 +62,89 @@ class WoodyMonitorStatus
                     'locked' => $locked,
                     'staging' => $staging,
                     'options' => (!empty($env['WOODY_OPTIONS'])) ? $env['WOODY_OPTIONS'] : [],
+                    'async' => $this->getAsync($env, $site_key)
                 ];
             }
 
+            $all_options = array_unique($all_options);
+            sort($all_options);
             ksort($sites);
-            $this->compile($sites);
+
+            header('X-VC-TTL: 0');
+            $this->compile([
+                'sites' => $this->order($this->filter($sites)),
+                'all_options' => $all_options,
+                'all_status' => $all_status,
+            ]);
         }
     }
 
-    private function compile($sites)
+    private function getAsync($env, $site_key)
+    {
+        $mysqli = new \mysqli($env['DB_HOST'], $env['DB_USER'], $env['DB_PASSWORD'], $env['DB_NAME']);
+        if ($mysqli->connect_errno) {
+            echo "Échec lors de la connexion à MySQL : (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
+        }
+
+        $result = $mysqli->query("SELECT count(*) FROM `wp_woody_async`");
+        if (!empty($result)) {
+            $result = $result->fetch_assoc();
+            if (!empty($result['count(*)'])) {
+                return $result['count(*)'];
+            }
+        }
+
+        return 0;
+    }
+
+    private function order($sites)
+    {
+        if (!empty($_GET['order']) == 'async') {
+            usort($sites, function ($a, $b) {
+                if ($a['async'] == $b['async']) {
+                    return 0;
+                }
+                return ($a['async'] > $b['async']) ? -1 : 1;
+            });
+        }
+
+        return $sites;
+    }
+
+    private function filter($sites)
+    {
+        if (!empty($_GET['status'])) {
+            foreach ($sites as $site_key => $site) {
+                if ($_GET['status'] !== $site['status']) {
+                    unset($sites[$site_key]);
+                }
+            }
+        }
+
+        if (!empty($_GET['options'])) {
+            foreach ($sites as $site_key => $site) {
+                if (!in_array($_GET['options'], $site['options'])) {
+                    unset($sites[$site_key]);
+                }
+            }
+        }
+
+        return $sites;
+    }
+
+    private function compile($data)
     {
         require_once('status.tpl.php');
     }
 
-    private function debug($debug)
+    private function debug($debug, $exit = true)
     {
         print '<pre>';
         print_r($debug);
         print '</pre>';
+        if ($exit) {
+            exit();
+        }
     }
 
     private function array_env($env)
