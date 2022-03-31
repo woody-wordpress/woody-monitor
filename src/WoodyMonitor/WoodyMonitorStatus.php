@@ -34,6 +34,17 @@ class WoodyMonitorStatus
                 $site_key = end($site_key);
                 $env = $this->dotenv($file->getRealPath());
 
+                if (file_exists(WP_WEBROOT_DIR . '/app/themes/' . $site_key . '/config/' . $env['WP_ENV'] . '/.env')) {
+                    $finder_theme = new Finder();
+                    $finder_theme->files()->followLinks()->ignoreDotFiles(false)->in(WP_WEBROOT_DIR . '/app/themes/' . $site_key . '/config/' . $env['WP_ENV'])->name('.env');
+                    if ($finder_theme->hasResults()) {
+                        foreach ($finder_theme as $file_theme) {
+                            $env_theme = $this->dotenv($file_theme->getRealPath());
+                            $env = array_merge($env, $env_theme);
+                        }
+                    }
+                }
+
                 $locked = (!empty($env['WOODY_ACCESS_LOCKED'])) ? $env['WOODY_ACCESS_LOCKED'] : false;
                 $staging = (!empty($env['WOODY_ACCESS_STAGING'])) ? $env['WOODY_ACCESS_STAGING'] : false;
 
@@ -168,8 +179,10 @@ class WoodyMonitorStatus
             if (!empty($line)) {
                 $line = explode('=', $line);
                 $key = $line[0];
-                $val = substr(substr($line[1], 1), 0, -1);
-
+                $val = $line[1];
+                if (substr($val, 0, 1) == '"' || substr($val, 0, 1) == "'") {
+                    $val = substr(substr($val, 1), 0, -1);
+                }
                 if (substr($val, 0, 1) == '[' && substr($val, -1) == ']') {
                     $val = $this->array_env($val);
                 } elseif (strpos($val, 'false') !== false) {
