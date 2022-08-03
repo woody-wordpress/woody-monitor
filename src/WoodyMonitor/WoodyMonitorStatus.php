@@ -73,7 +73,8 @@ class WoodyMonitorStatus
                     'locked' => $locked,
                     'staging' => $staging,
                     'options' => (!empty($env['WOODY_OPTIONS'])) ? $env['WOODY_OPTIONS'] : [],
-                    'async' => $this->getAsync($env, $site_key)
+                    'async' => $this->getAsync($env, $site_key),
+                    'failed' => $this->getFailed($env, $site_key),
                 ];
             }
 
@@ -108,6 +109,24 @@ class WoodyMonitorStatus
         return 0;
     }
 
+    private function getFailed($env, $site_key)
+    {
+        $mysqli = new \mysqli($env['DB_HOST'], $env['DB_USER'], $env['DB_PASSWORD'], $env['DB_NAME']);
+        if ($mysqli->connect_errno) {
+            echo "Échec lors de la connexion à MySQL : (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
+        }
+
+        $result = $mysqli->query("SELECT count(*) FROM `wp_woody_async` WHERE failed is not null");
+        if (!empty($result)) {
+            $result = $result->fetch_assoc();
+            if (!empty($result['count(*)'])) {
+                return $result['count(*)'];
+            }
+        }
+
+        return 0;
+    }
+
     private function order($sites)
     {
         if (!empty($_GET['order']) && $_GET['order'] == 'async') {
@@ -116,6 +135,13 @@ class WoodyMonitorStatus
                     return 0;
                 }
                 return ($a['async'] > $b['async']) ? -1 : 1;
+            });
+        } elseif (!empty($_GET['order']) && $_GET['order'] == 'failed') {
+            usort($sites, function ($a, $b) {
+                if ($a['failed'] == $b['failed']) {
+                    return 0;
+                }
+                return ($a['failed'] > $b['failed']) ? -1 : 1;
             });
         }
 
@@ -145,8 +171,10 @@ class WoodyMonitorStatus
 
     private function compile($data)
     {
-        if (!empty($_GET['callback']) && $_GET['callback'] == 'api') {
-            require_once('api.tpl.php');
+        if (!empty($_GET['callback']) && ($_GET['callback'] == 'api' || $_GET['callback'] == 'async')) {
+            require_once('async.tpl.php');
+        } elseif (!empty($_GET['callback']) && $_GET['callback'] == 'failed') {
+            require_once('failed.tpl.php');
         } else {
             require_once('status.tpl.php');
         }
