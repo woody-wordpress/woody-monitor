@@ -161,6 +161,7 @@ class WoodyMonitorStatus
                 $return[] = $row;
             }
         }
+
         return $return;
     }
 
@@ -170,6 +171,7 @@ class WoodyMonitorStatus
         if ($mysqli->connect_errno !== 0) {
             echo "Échec lors de la connexion à MySQL : (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
         }
+
         return $mysqli;
     }
 
@@ -242,6 +244,7 @@ class WoodyMonitorStatus
                 if (substr($val, 0, 1) == '"' || substr($val, 0, 1) == "'") {
                     $val = substr(substr($val, 1), 0, -1);
                 }
+
                 if (substr($val, 0, 1) == '[' && substr($val, -1) == ']') {
                     $val = $this->array_env($val);
                 } elseif (strpos($val, 'false') !== false) {
@@ -253,6 +256,7 @@ class WoodyMonitorStatus
                 $env[$key] = $val;
             }
         }
+
         return $env;
     }
 
