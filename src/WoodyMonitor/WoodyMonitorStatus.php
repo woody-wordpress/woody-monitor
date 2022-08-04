@@ -1,16 +1,15 @@
 <?php
 
+/**
+ * Woody Monitor
+ * @author Léo POIROUX
+ * @copyright Raccourci Agency 2022
+ */
+
 namespace WoodyMonitor;
 
 use Symfony\Component\Finder\Finder;
 
-/**
- * Deploy
- *
- * @author Léo POIROUX <leo@raccourci.fr>
- * @copyright (c) 2020, Raccourci Agency
- * @package woody-cli
- */
 class WoodyMonitorStatus
 {
     /**
@@ -26,12 +25,34 @@ class WoodyMonitorStatus
         $all_options = [];
         $all_status = [];
 
+        // Get View
+        if (!empty($_GET['callback']) && ($_GET['callback'] == 'api' || $_GET['callback'] == 'count_async')) {
+            $view = 'count_async';
+        } elseif (!empty($_GET['callback']) && $_GET['callback'] == 'count_failed') {
+            $view = 'count_failed';
+        } elseif (!empty($_GET['callback']) && $_GET['callback'] == 'list_failed') {
+            $view = 'list_failed';
+        } else {
+            $view = 'status';
+        }
+
+        // Get View
+        if (!empty($_GET['site_key'])) {
+            $param_site_key = $_GET['site_key'];
+        }
+
         // check if there are any search results
         if ($finder->hasResults()) {
             foreach ($finder as $file) {
                 $pathinfo = pathinfo($file->getRealPath());
                 $site_key = explode('/', $pathinfo['dirname']);
                 $site_key = end($site_key);
+
+                // On ne garde que le site_key passé en paramètre
+                if (isset($param_site_key) && $param_site_key != $site_key) {
+                    continue;
+                }
+
                 $env = $this->dotenv($file->getRealPath());
 
                 if (file_exists(WP_WEBROOT_DIR . '/app/themes/' . $site_key . '/config/' . $env['WP_ENV'] . '/.env')) {
@@ -45,8 +66,8 @@ class WoodyMonitorStatus
                     }
                 }
 
-                $locked = (!empty($env['WOODY_ACCESS_LOCKED'])) ? $env['WOODY_ACCESS_LOCKED'] : false;
-                $staging = (!empty($env['WOODY_ACCESS_STAGING'])) ? $env['WOODY_ACCESS_STAGING'] : false;
+                $locked = (empty($env['WOODY_ACCESS_LOCKED'])) ? false : $env['WOODY_ACCESS_LOCKED'];
+                $staging = (empty($env['WOODY_ACCESS_STAGING'])) ? false : $env['WOODY_ACCESS_STAGING'];
 
                 if (!file_exists(WP_ROOT_DIR . '/web/app/themes/' . $site_key . '/style.css')) {
                     $status = 'empty';
@@ -59,45 +80,54 @@ class WoodyMonitorStatus
                 }
 
                 // Options
-                $options = (!empty($env['WOODY_OPTIONS'])) ? $env['WOODY_OPTIONS'] : [];
+                $options = (empty($env['WOODY_OPTIONS'])) ? [] : $env['WOODY_OPTIONS'];
                 $all_options = array_merge($all_options, $options);
 
                 // Status
                 $all_status[$status] = (empty($all_status[$status])) ? 1 : ($all_status[$status] + 1);
 
+                // MysqlConnect
+                $mysqli = $this->mysqlConnect($env);
+
                 // Sites
                 $sites[$site_key] = [
                     'site_key' => $site_key,
-                    'url' => (!empty($env['WP_HOME'])) ? $env['WP_HOME'] : null,
+                    'url' => (empty($env['WP_HOME'])) ? null : $env['WP_HOME'],
                     'status' => $status,
                     'locked' => $locked,
                     'staging' => $staging,
-                    'options' => (!empty($env['WOODY_OPTIONS'])) ? $env['WOODY_OPTIONS'] : [],
-                    'async' => $this->getAsync($env, $site_key),
-                    'failed' => $this->getFailed($env, $site_key),
+                    'options' => (empty($env['WOODY_OPTIONS'])) ? [] : $env['WOODY_OPTIONS'],
                 ];
+
+                if ($view == 'status' || $view == 'count_async') {
+                    $sites[$site_key]['async'] = $this->getCountAsync($mysqli);
+                }
+
+                if ($view == 'status' || $view == 'count_failed') {
+                    $sites[$site_key]['failed'] = $this->getCountFailed($mysqli);
+                }
+
+                if ($view == 'list_failed') {
+                    $sites[$site_key]['failed'] = $this->getListFailed($mysqli);
+                }
             }
 
-            $all_options = array_unique($all_options);
+            $all_options = (empty($all_options)) ? [] : array_unique($all_options);
             sort($all_options);
-            ksort($sites);
 
-            header('X-VC-TTL: 0');
-            $this->compile([
-                'sites' => $this->order($this->filter($sites)),
-                'all_options' => $all_options,
-                'all_status' => $all_status,
-            ]);
+            if (!empty($sites)) {
+                ksort($sites);
+                $this->compile($view, [
+                    'sites' => $this->order($this->filter($sites)),
+                    'all_options' => $all_options,
+                    'all_status' => $all_status,
+                ]);
+            }
         }
     }
 
-    private function getAsync($env, $site_key)
+    private function getCountAsync($mysqli)
     {
-        $mysqli = new \mysqli($env['DB_HOST'], $env['DB_USER'], $env['DB_PASSWORD'], $env['DB_NAME']);
-        if ($mysqli->connect_errno) {
-            echo "Échec lors de la connexion à MySQL : (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-        }
-
         $result = $mysqli->query("SELECT count(*) FROM `wp_woody_async` WHERE failed is null");
         if (!empty($result)) {
             $result = $result->fetch_assoc();
@@ -109,13 +139,8 @@ class WoodyMonitorStatus
         return 0;
     }
 
-    private function getFailed($env, $site_key)
+    private function getCountFailed($mysqli)
     {
-        $mysqli = new \mysqli($env['DB_HOST'], $env['DB_USER'], $env['DB_PASSWORD'], $env['DB_NAME']);
-        if ($mysqli->connect_errno) {
-            echo "Échec lors de la connexion à MySQL : (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
-        }
-
         $result = $mysqli->query("SELECT count(*) FROM `wp_woody_async` WHERE failed is not null");
         if (!empty($result)) {
             $result = $result->fetch_assoc();
@@ -127,22 +152,33 @@ class WoodyMonitorStatus
         return 0;
     }
 
+    private function getListFailed($mysqli)
+    {
+        $return = [];
+        $result = $mysqli->query("SELECT * FROM `wp_woody_async` WHERE failed is not null");
+        if (!empty($result)) {
+            while ($row = $result->fetch_assoc()) {
+                $return[] = $row;
+            }
+        }
+        return $return;
+    }
+
+    private function mysqlConnect($env)
+    {
+        $mysqli = new \mysqli($env['DB_HOST'], $env['DB_USER'], $env['DB_PASSWORD'], $env['DB_NAME']);
+        if ($mysqli->connect_errno !== 0) {
+            echo "Échec lors de la connexion à MySQL : (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
+        }
+        return $mysqli;
+    }
+
     private function order($sites)
     {
         if (!empty($_GET['order']) && $_GET['order'] == 'async') {
-            usort($sites, function ($a, $b) {
-                if ($a['async'] == $b['async']) {
-                    return 0;
-                }
-                return ($a['async'] > $b['async']) ? -1 : 1;
-            });
+            usort($sites, fn ($a, $b) => $b['async'] <=> $a['async']);
         } elseif (!empty($_GET['order']) && $_GET['order'] == 'failed') {
-            usort($sites, function ($a, $b) {
-                if ($a['failed'] == $b['failed']) {
-                    return 0;
-                }
-                return ($a['failed'] > $b['failed']) ? -1 : 1;
-            });
+            usort($sites, fn ($a, $b) => $b['failed'] <=> $a['failed']);
         }
 
         return $sites;
@@ -169,15 +205,10 @@ class WoodyMonitorStatus
         return $sites;
     }
 
-    private function compile($data)
+    private function compile($view, $data)
     {
-        if (!empty($_GET['callback']) && ($_GET['callback'] == 'api' || $_GET['callback'] == 'async')) {
-            require_once('async.tpl.php');
-        } elseif (!empty($_GET['callback']) && $_GET['callback'] == 'failed') {
-            require_once('failed.tpl.php');
-        } else {
-            require_once('status.tpl.php');
-        }
+        header('X-VC-TTL: 0');
+        require_once($view . '.tpl.php');
     }
 
     private function debug($debug, $exit = true)
@@ -193,7 +224,7 @@ class WoodyMonitorStatus
     private function array_env($env)
     {
         $env = str_replace(array('[', ']', '"', ' '), '', $env);
-        $env = (!empty($env)) ? explode(',', $env) : [];
+        $env = (empty($env)) ? [] : explode(',', $env);
         sort($env);
         return array_unique($env);
     }

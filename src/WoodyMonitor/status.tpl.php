@@ -125,7 +125,7 @@
     <form method="GET">
     <table class="cards">
         <tr class="header">
-            <th colspan="<?php print(count($data['all_options']) + 3); ?>">
+            <th colspan="<?php print((is_countable($data['all_options']) ? count($data['all_options']) : 0) + 3); ?>">
                 <select name="status" onchange="this.form.submit()">
                 <option value="">Tous les status</option>
                     <?php foreach ($data['all_status'] as $status => $nb_status) : ?>
