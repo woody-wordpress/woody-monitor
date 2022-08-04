@@ -1,7 +1,7 @@
 {
     "name": "woody-wordpress/woody-monitor",
     "type": "library",
-    "version": "1.5.1",
+    "version": "1.5.2",
     "description": "A Monitor Uptime Status Page",
     "license": "GPL-2.0",
     "authors": [
