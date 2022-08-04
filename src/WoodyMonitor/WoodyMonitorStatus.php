@@ -26,12 +26,12 @@ class WoodyMonitorStatus
         $all_status = [];
 
         // Get View
-        if (!empty($_GET['callback']) && ($_GET['callback'] == 'api' || $_GET['callback'] == 'count_async')) {
-            $view = 'count_async';
-        } elseif (!empty($_GET['callback']) && $_GET['callback'] == 'count_failed') {
-            $view = 'count_failed';
-        } elseif (!empty($_GET['callback']) && $_GET['callback'] == 'list_failed') {
-            $view = 'list_failed';
+        if (!empty($_GET['callback']) && ($_GET['callback'] == 'api' || $_GET['callback'] == 'async_count')) {
+            $view = 'async_count';
+        } elseif (!empty($_GET['callback']) && $_GET['callback'] == 'failed_count') {
+            $view = 'failed_count';
+        } elseif (!empty($_GET['callback']) && $_GET['callback'] == 'failed_list') {
+            $view = 'failed_list';
         } else {
             $view = 'status';
         }
@@ -99,15 +99,15 @@ class WoodyMonitorStatus
                     'options' => (empty($env['WOODY_OPTIONS'])) ? [] : $env['WOODY_OPTIONS'],
                 ];
 
-                if ($view == 'status' || $view == 'count_async') {
+                if ($view == 'status' || $view == 'async_count') {
                     $sites[$site_key]['async'] = $this->getCountAsync($mysqli);
                 }
 
-                if ($view == 'status' || $view == 'count_failed') {
+                if ($view == 'status' || $view == 'failed_count') {
                     $sites[$site_key]['failed'] = $this->getCountFailed($mysqli);
                 }
 
-                if ($view == 'list_failed') {
+                if ($view == 'failed_list') {
                     $sites[$site_key]['failed'] = $this->getListFailed($mysqli);
                 }
             }
