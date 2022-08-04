@@ -98,7 +98,7 @@ class WoodyMonitorStatus
             echo "Échec lors de la connexion à MySQL : (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
         }
 
-        $result = $mysqli->query("SELECT count(*) FROM `wp_woody_async`");
+        $result = $mysqli->query("SELECT count(*) FROM `wp_woody_async` WHERE failed is null");
         if (!empty($result)) {
             $result = $result->fetch_assoc();
             if (!empty($result['count(*)'])) {
