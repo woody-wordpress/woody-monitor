@@ -204,6 +204,14 @@ class WoodyMonitorStatus
             }
         }
 
+        if (!empty($_GET['notoptions'])) {
+            foreach ($sites as $site_key => $site) {
+                if (in_array($_GET['notoptions'], $site['options'])) {
+                    unset($sites[$site_key]);
+                }
+            }
+        }
+
         return $sites;
     }
 
