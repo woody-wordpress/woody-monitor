@@ -127,15 +127,21 @@
         <tr class="header">
             <th colspan="<?php print((is_countable($data['all_options']) ? count($data['all_options']) : 0) + 3); ?>">
                 <select name="status" onchange="this.form.submit()">
-                <option value="">Tous les status</option>
+                <option value="">Avec ce status</option>
                     <?php foreach ($data['all_status'] as $status => $nb_status) : ?>
                         <option value="<?php print $status; ?>"<?php (!empty($_GET['status']) && $_GET['status'] == $status) ? print 'selected' : null; ?>><?php print $this->__($status) . ' (' . $nb_status . ' sites)'; ?></option>
                     <?php endforeach; ?>
                 <select>
                 <select name="options" onchange="this.form.submit()">
-                <option value="">Toutes les options</option>
+                <option value="">Avec cette option</option>
                     <?php foreach ($data['all_options'] as $option) : ?>
                         <option value="<?php print $option; ?>"<?php (!empty($_GET['options']) && $_GET['options'] == $option) ? print 'selected' : null; ?>><?php print $option; ?></option>
+                    <?php endforeach; ?>
+                <select>
+                <select name="notoptions" onchange="this.form.submit()">
+                <option value="">Sans cette option</option>
+                    <?php foreach ($data['all_options'] as $option) : ?>
+                        <option value="<?php print $option; ?>"<?php (!empty($_GET['notoptions']) && $_GET['notoptions'] == $option) ? print 'selected' : null; ?>><?php print $option; ?></option>
                     <?php endforeach; ?>
                 <select>
                 <select class="order" name="order" onchange="this.form.submit()">
