@@ -45,6 +45,15 @@
             margin: 5px 0;
         }
 
+        .site_key a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .site_key a:hover {
+            text-decoration: underline;
+        }
+
         .status a {
             border-radius: 4px;
             padding: 3px 8px;
@@ -144,21 +153,25 @@
                         <option value="<?php print $option; ?>"<?php (!empty($_GET['notoptions']) && $_GET['notoptions'] == $option) ? print 'selected' : null; ?>><?php print $option; ?></option>
                     <?php endforeach; ?>
                 <select>
+                <!--
                 <select class="order" name="order" onchange="this.form.submit()">
                     <option value="alpha"<?php (!empty($_GET['order']) && $_GET['order'] == 'alpha') ? print 'selected' : null; ?>>Ordre Alphabétique</option>
-                    <option value="async"<?php (!empty($_GET['order']) && $_GET['order'] == 'async') ? print 'selected' : null; ?>>Par nombre d'async</option>
-                    <option value="failed"<?php (!empty($_GET['order']) && $_GET['order'] == 'failed') ? print 'selected' : null; ?>>Par nombre de failed</option>
                 <select>
+                -->
             </th>
         </tr>
         <?php foreach ($data['sites'] as $site) : ?>
             <tr class="card <?php print $site['status']; ?>">
                 <td class="status">
-                    <a href="<?php print $site['url']; ?>" target="_blank">
-                        <?php print $this->__($site['status']); ?>
+                    <a href="<?php print $site['url']; ?>/wp/wp-admin" target="_blank">
+                        <?php print __($site['status']); ?>
                     </a>
                 </td>
-                <td class="site_key"><?php print $site['site_key']; ?></td>
+                <td class="site_key">
+                    <a href="<?php print $site['url']; ?>" target="_blank">
+                        <?php print $site['site_key']; ?>
+                    </a>
+                </td>
                 <?php foreach ($data['all_options'] as $option) : ?>
                     <?php if (in_array($option, $site['options'])) : ?>
                         <td class="check tooltip">&nbsp;<span class="tooltiptext"><?php print $option; ?></span></td>
@@ -166,8 +179,6 @@
                         <td class="uncheck tooltip">&nbsp;<span class="tooltiptext"><?php print $option; ?></span></td>
                     <?php endif; ?>
                 <?php endforeach; ?>
-                <td class="async">&nbsp;&nbsp;<?php print $site['async']; ?> async</td>
-                <td class="failed">&nbsp;&nbsp;<?php print $site['failed']; ?> failed</td>
             </tr>
         <?php endforeach; ?>
     </table>
