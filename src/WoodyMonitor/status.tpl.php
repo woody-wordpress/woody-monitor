@@ -164,7 +164,7 @@
             <tr class="card <?php print $site['status']; ?>">
                 <td class="status">
                     <a href="<?php print $site['url']; ?>/wp/wp-admin" target="_blank">
-                        <?php print __($site['status']); ?>
+                        <?php print $this->__($site['status']); ?>
                     </a>
                 </td>
                 <td class="site_key">
