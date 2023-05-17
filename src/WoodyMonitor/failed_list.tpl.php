@@ -1,5 +1,6 @@
 <?php
 
+header('X-VC-TTL: 0');
 header('Content-Type: application/json; charset=UTF-8');
 $return = [];
 foreach ($data['sites'] as $site) {
