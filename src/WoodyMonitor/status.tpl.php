@@ -1,9 +1,6 @@
 <html>
 <head>
     <title>Woody Status</title>
-    <?php if (!empty($_GET['order']) && $_GET['order'] == 'async'): ?>
-    <meta http-equiv="refresh" content="15">
-    <?php endif; ?>
     <style>
         body {
             font-family: 'Courier New', Courier, monospace;
