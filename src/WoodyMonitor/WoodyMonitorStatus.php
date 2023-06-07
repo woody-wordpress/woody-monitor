@@ -32,6 +32,8 @@ class WoodyMonitorStatus
             $view = 'failed_count';
         } elseif (!empty($_GET['callback']) && $_GET['callback'] == 'failed_list') {
             $view = 'failed_list';
+        } elseif (!empty($_GET['callback']) && $_GET['callback'] == '404_count') {
+            $view = '404_count';
         } else {
             $view = 'status';
         }
@@ -99,16 +101,14 @@ class WoodyMonitorStatus
                     'options' => (empty($env['WOODY_OPTIONS'])) ? [] : $env['WOODY_OPTIONS'],
                 ];
 
-                if ($view == 'status' || $view == 'async_count') {
+                if ($view == 'async_count') {
                     $sites[$site_key]['async'] = $this->getCountAsync($mysqli);
-                }
-
-                if ($view == 'status' || $view == 'failed_count') {
+                } elseif ($view == 'failed_count') {
                     $sites[$site_key]['failed'] = $this->getCountFailed($mysqli);
-                }
-
-                if ($view == 'failed_list') {
+                } elseif ($view == 'failed_list') {
                     $sites[$site_key]['failed'] = $this->getListFailed($mysqli);
+                } elseif ($view == '404_count') {
+                    $sites[$site_key]['404'] = $this->getCount404($mysqli);
                 }
             }
 
@@ -165,11 +165,26 @@ class WoodyMonitorStatus
         return $return;
     }
 
+    private function getCount404($mysqli)
+    {
+        $result = $mysqli->query("SELECT count(*) FROM `wp_redirection_404`");
+        if (!empty($result)) {
+            $result = $result->fetch_assoc();
+            if (!empty($result['count(*)'])) {
+                return $result['count(*)'];
+            }
+        }
+
+        return 0;
+    }
+
     private function mysqlConnect($env)
     {
+        ini_set('display_errors', 0);
+
         $mysqli = new \mysqli($env['DB_HOST'], $env['DB_USER'], $env['DB_PASSWORD'], $env['DB_NAME']);
         if ($mysqli->connect_errno !== 0) {
-            echo "Échec lors de la connexion à MySQL : (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
+            echo "Échec lors de la connexion à MySQL : (" . $mysqli->connect_errno . ") " . $mysqli->connect_error . "\n";
         }
 
         return $mysqli;
