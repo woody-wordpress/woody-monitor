@@ -34,6 +34,8 @@ class WoodyMonitorStatus
             $view = 'failed_list';
         } elseif (!empty($_GET['callback']) && $_GET['callback'] == '404_count') {
             $view = '404_count';
+        } elseif (!empty($_GET['callback']) && $_GET['callback'] == '404_last') {
+            $view = '404_last';
         } else {
             $view = 'status';
         }
@@ -108,7 +110,9 @@ class WoodyMonitorStatus
                 } elseif ($view == 'failed_list') {
                     $sites[$site_key]['failed'] = $this->getListFailed($mysqli);
                 } elseif ($view == '404_count') {
-                    $sites[$site_key]['404'] = $this->getCount404($mysqli);
+                    $sites[$site_key]['404_count'] = $this->getCount404($mysqli);
+                } elseif ($view == '404_last') {
+                    $sites[$site_key]['404_last'] = $this->getLast404($mysqli);
                 }
             }
 
@@ -168,6 +172,19 @@ class WoodyMonitorStatus
     private function getCount404($mysqli)
     {
         $result = $mysqli->query("SELECT count(*) FROM `wp_redirection_404`");
+        if (!empty($result)) {
+            $result = $result->fetch_assoc();
+            if (!empty($result['count(*)'])) {
+                return $result['count(*)'];
+            }
+        }
+
+        return 0;
+    }
+
+    private function getLast404($mysqli)
+    {
+        $result = $mysqli->query("SELECT count(*) FROM `wp_redirection_404` WHERE created >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)");
         if (!empty($result)) {
             $result = $result->fetch_assoc();
             if (!empty($result['count(*)'])) {
