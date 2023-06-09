@@ -34,6 +34,8 @@ class WoodyMonitorStatus
             $view = 'failed_list';
         } elseif (!empty($_GET['callback']) && $_GET['callback'] == '404_count') {
             $view = '404_count';
+        } elseif (!empty($_GET['callback']) && $_GET['callback'] == '404_last') {
+            $view = '404_last';
         } else {
             $view = 'status';
         }
