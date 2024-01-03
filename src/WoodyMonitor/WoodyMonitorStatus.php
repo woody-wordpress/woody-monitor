@@ -32,6 +32,8 @@ class WoodyMonitorStatus
             $view = 'failed_count';
         } elseif (!empty($_GET['callback']) && $_GET['callback'] == 'failed_list') {
             $view = 'failed_list';
+        } elseif (!empty($_GET['callback']) && $_GET['callback'] == 'bugs_count') {
+            $view = 'bugs_count';
         } elseif (!empty($_GET['callback']) && $_GET['callback'] == '404_count') {
             $view = '404_count';
         } elseif (!empty($_GET['callback']) && $_GET['callback'] == '404_last') {
@@ -109,6 +111,8 @@ class WoodyMonitorStatus
                     $sites[$site_key]['failed'] = $this->getCountFailed($mysqli);
                 } elseif ($view == 'failed_list') {
                     $sites[$site_key]['failed'] = $this->getListFailed($mysqli);
+                } elseif ($view == 'bugs_count') {
+                    $sites[$site_key]['bugs'] = $this->getCountBugs($mysqli);
                 } elseif ($view == '404_count') {
                     $sites[$site_key]['404_count'] = $this->getCount404($mysqli);
                 } elseif ($view == '404_last') {
@@ -128,6 +132,28 @@ class WoodyMonitorStatus
                 ]);
             }
         }
+    }
+
+    private function getCountBugs($mysqli)
+    {
+        // Cette requête teste si la rewrite rules sur les "offres" est présente. Bug survenu suite à la mise en ligne de Polylang.
+        $result = $mysqli->query("SELECT count(*) FROM wp_termmeta WHERE meta_key = '_pll_strings_translations' AND meta_value LIKE '%offres%'");
+        if (!empty($result)) {
+            $result = $result->fetch_assoc();
+            if (!empty($result['count(*)'])) {
+
+                $sub_result = $mysqli->query("SELECT count(*) FROM `wp_options` WHERE option_name = 'rewrite_rules' AND option_value NOT LIKE '%offres%'");
+                if (!empty($sub_result)) {
+                    $sub_result = $sub_result->fetch_assoc();
+                    if (!empty($sub_result['count(*)'])) {
+                        return $sub_result['count(*)'];
+                    }
+                }
+
+            }
+        }
+
+        return 0;
     }
 
     private function getCountAsync($mysqli)
